@@ -5,166 +5,173 @@
 [![MCP](https://img.shields.io/badge/Protocol-Model%20Context%20Protocol-orange.svg)](https://modelcontextprotocol.io/)
 [![License](https://img.shields.io/badge/License-MIT-purple.svg)](LICENSE)
 
-Dự án **TARS ESP32 Robot** là một robot thông minh tích hợp AI thể nghiệm (Embodied AI) lấy cảm hứng từ robot **TARS** trong bộ phim khoa học viễn tưởng *Interstellar*. Dự án được phát triển dựa trên nền tảng **Xiaozhi ESP32**, kết hợp khả năng giao tiếp giọng nói thời gian thực với các mô hình ngôn ngữ lớn (LLM như Qwen, DeepSeek, ChatGPT) thông qua giao thức **MCP (Model Context Protocol)** để điều khiển hành vi và chuyển động vật lý bằng 4 động cơ servo.
+**TARS ESP32 Robot** is an open-source, embodied AI robotic assistant inspired by the iconic robot **TARS** from the sci-fi movie *Interstellar*. Built upon the **XiaoZhi ESP32** ecosystem, the robot seamlessly bridges cloud-based Large Language Models (e.g., Qwen, DeepSeek, ChatGPT) with physical bipedal/quad-servo actuation via the **Model Context Protocol (MCP)**, featuring real-time conversational voice interaction and synchronized multi-servo kinematics.
 
 ---
 
-## 🌟 Tính Năng Nổi Bật (Key Features)
+## 🌟 Key Features
 
-- 🧠 **Trí tuệ nhân tạo thể nghiệm (Embodied AI):** 
-  - Tích hợp giao thức **Model Context Protocol (MCP)** trực tiếp trên ESP32.
-  - LLM có khả năng nhận thức cơ thể vật lý và tự động gọi công cụ `self.movement.send` để di chuyển, tạo dáng hoặc biểu đạt cảm xúc theo ngữ cảnh trò chuyện.
-- 🗣️ **Tương tác giọng nói thời gian thực (Real-time Voice AI):**
-  - Đánh thức bằng giọng nói offline (ESP-SR Wake-word).
-  - Truyền phát âm thanh hai chiều chuẩn nén Opus qua WebSocket / MQTT.
-  - Xử lý hội thoại nối tiếp ASR + LLM + TTS với độ trễ cực thấp.
-  - Nhận diện người nói (Speaker Identification - 3D Speaker).
-- 🦾 **Điều khiển chuyển động 4 Servo mượt mà (Smooth Motion Control):**
-  - Sử dụng mạch mở rộng PWM 16 kênh **PCA9685 (I2C)** hoặc GPIO onboard.
-  - Thuật toán nội suy đồng bộ nhiều servo (`MoveServosSynchronized`), tránh giật cục và bảo vệ bánh răng servo.
-  - Các dáng di chuyển định sẵn: Đi tới (`MOVE_FORWARD`), Đi lùi (`MOVE_BACKWARD`), Rẽ trái (`TURN_LEFT`), Rẽ phải (`TURN_RIGHT`), Tự giới thiệu/Tạo dáng (`POSE`), Cười đùa/Lắc lư (`LAUGH`), Dừng lại (`STOP`).
-- 🎛️ **Công cụ cân chỉnh Servo trực quan (`calib_gui.py`):**
-  - Giao diện Python GUI (Tkinter/Catppuccin theme) kết nối qua Serial COM Port.
-  - Điều chỉnh góc và PWM trực tiếp theo thời gian thực (Real-time Tuning).
-  - Lưu cấu hình vĩnh viễn vào bộ nhớ flash **NVS (Non-Volatile Storage)** của ESP32.
-- 📺 **Màn hình biểu cảm cảm xúc (Display & Emotions):**
-  - Hỗ trợ màn hình LCD (ST7789, GC9A01) / OLED hiển thị biểu cảm khuôn mặt sống động tương ứng với giọng nói và hành động.
+- 🧠 **Embodied AI with Model Context Protocol (MCP):**
+  - Native on-device MCP client and server running directly on the ESP32.
+  - The LLM possesses self-body awareness and autonomously schedules physical movement tools (`self.movement.send`) based on conversational context, user intent, or emotional cues.
+- 🗣️ **Real-Time Streaming Voice AI:**
+  - Offline acoustic wake-word detection powered by [ESP-SR](https://github.com/espressif/esp-sr).
+  - Low-latency bi-directional audio streaming using the Opus audio codec over WebSocket / MQTT.
+  - End-to-end pipeline: Streaming ASR $\rightarrow$ LLM Reasoning $\rightarrow$ Streaming TTS.
+  - Speaker identification and voiceprint recognition ([3D Speaker](https://github.com/modelscope/3D-Speaker)).
+- 🦾 **Smooth 4-Servo Gait Kinematics:**
+  - Driven by the **PCA9685** 16-channel 12-bit PWM I2C controller (or direct onboard LEDC PWM).
+  - Multi-servo synchronized interpolation (`MoveServosSynchronized`) prevents abrupt snapping, reduces mechanical stress, and eliminates gear burnout.
+  - Built-in gait patterns: `MOVE_FORWARD`, `MOVE_BACKWARD`, `TURN_LEFT`, `TURN_RIGHT`, `POSE`, `LAUGH` (celebration dance), and `STOP`.
+- 🎛️ **Interactive Python Calibration GUI (`calib_gui.py`):**
+  - Modern desktop application built with Python Tkinter (Catppuccin dark theme).
+  - Real-time angle & PWM trim over USB Serial COM port.
+  - One-click non-volatile storage (**NVS Flash**) persistence on ESP32, automatically restored on power-up.
+- 📺 **Dynamic Expression Display & Emotions:**
+  - Supports round and rectangular LCD/OLED displays (GC9A01, ST7789, SSD1306).
+  - Animated facial expressions and emojis dynamically rendered in sync with audio output.
 
 ---
 
-## 🛠️ Cấu Trúc Phần Cứng (Hardware Architecture)
+## 🛠️ Hardware Architecture & Wiring
 
-### 1. Danh sách linh kiện đề xuất
-- **Vi điều khiển:** ESP32-S3 (khuyên dùng bản 16MB Flash, 8MB PSRAM) hoặc ESP32.
-- **Mạch lái Servo:** Mạch PCA9685 I2C 16-Channel 12-bit PWM.
-- **Động cơ Servo:** 4x Servo kim loại (MG90S, MG996R, SPT4412LV hoặc servo tương đương).
-- **Âm thanh đầu vào (Microphone):** INMP441 I2S Microphone (hoặc ES7210 / ES8311 audio board).
-- **Âm thanh đầu ra (Speaker/DAC):** Mạch khuếch đại I2S MAX98357A + Loa 4Ω 3W.
-- **Màn hình hiển thị:** Màn hình tròn GC9A01 hoặc chữ nhật ST7789 (SPI).
-- **Nguồn cấp:** Nguồn 5V 3A - 5A riêng cho Servo (chú ý **nối chung GND** với ESP32).
+### 1. Recommended Bill of Materials (BOM)
+- **MCU:** ESP32-S3 (recommended: 16MB Flash, 8MB Octal PSRAM) or standard ESP32.
+- **Actuator Controller:** PCA9685 16-Channel 12-bit PWM I2C Module.
+- **Servos:** 4x Metal-gear hobby servos (e.g., MG90S, MG996R, SPT4412LV, or equivalent high-torque servos).
+- **Audio Input (Microphone):** INMP441 I2S digital microphone (or ES7210 / ES8311 audio board).
+- **Audio Output (Amplifier/Speaker):** MAX98357A I2S DAC Amplifier with a 4Ω 3W speaker.
+- **Display:** GC9A01 (round 240x240 SPI LCD) or ST7789 (rectangular 240x240/320 SPI LCD).
+- **Power Supply:** Dedicated external 5V 3A–5A supply for servos (always connect **common GND** with ESP32).
 
-### 2. Sơ đồ đấu nối (Pinout & Wiring)
+---
 
-#### Mạch PCA9685 (I2C) nối với ESP32:
-| Chân PCA9685 | Chân ESP32 (Mặc định) | Ghi chú |
+### 2. Wiring & Pinout
+
+#### PCA9685 I2C Interface to ESP32:
+| PCA9685 Pin | ESP32 Pin (Default) | Notes |
 | :--- | :--- | :--- |
-| **VCC** | 3.3V hoặc 5V | Nguồn logic |
-| **GND** | GND | Nối chung mass toàn hệ thống |
-| **SDA** | **GPIO 21** | Chân I2C SDA |
-| **SCL** | **GPIO 22** | Chân I2C SCL |
-| **V+ (Servo)** | 5V Nguồn ngoài | Cung cấp tải cho 4 Servo |
+| **VCC** | 3.3V or 5V | Logic power |
+| **GND** | GND | Common system ground |
+| **SDA** | **GPIO 21** | I2C Data line |
+| **SCL** | **GPIO 22** | I2C Clock line |
+| **V+ (Servo)** | External 5V (3A+) | Servo motor power |
 
-#### Thứ tự kênh Servo trên PCA9685:
-| Kênh (Channel) | Tên Servo | Chức năng trên Robot TARS |
+#### PCA9685 Servo Channels:
+| Channel | Servo Identifier | Mechanical Function |
 | :---: | :--- | :--- |
-| **CH 0** | **Left Height (LH)** | Servo nâng hạ thân bên trái |
-| **CH 1** | **Right Height (RH)** | Servo nâng hạ thân bên phải |
-| **CH 2** | **Left Leg (LL)** | Servo chân/càng xoay bên trái |
-| **CH 3** | **Right Leg (RL)** | Servo chân/càng xoay bên phải |
+| **CH 0** | **Left Height (LH)** | Controls left body vertical elevation |
+| **CH 1** | **Right Height (RH)** | Controls right body vertical elevation |
+| **CH 2** | **Left Leg (LL)** | Controls left leg swing / stride |
+| **CH 3** | **Right Leg (RL)** | Controls right leg swing / stride |
 
 ---
 
-## 📂 Cấu Trúc Dự Án (Project Structure)
+## 📂 Repository Structure
 
 ```text
 TARS_ESP32_Robot/
-├── calib_gui.py               # Công cụ Python GUI cân chỉnh góc servo qua Serial
-├── CMakeLists.txt             # Cấu hình biên dịch ESP-IDF Project
-├── sdkconfig.defaults*        # Cấu hình sdkconfig cho các dòng chip ESP32/S3
-├── partitions/                # Bảng phân vùng bộ nhớ ESP32 (Flash partitions)
-├── docs/                      # Tài liệu kỹ thuật, sơ đồ, kiến trúc MCP
-├── scripts/                   # Script hỗ trợ flash và build
+├── calib_gui.py               # Interactive desktop GUI for servo calibration via Serial
+├── CMakeLists.txt             # Top-level ESP-IDF CMake configuration
+├── sdkconfig.defaults*        # Target default configurations for ESP32/S3/C3
+├── partitions/                # Partition tables (Flash memory layout)
+├── docs/                      # Architectural specs, MCP protocol docs, diagrams
+├── scripts/                   # Asset generation, audio conversion, and deployment scripts
 └── main/
-    ├── application.cc / .h    # Khởi tạo ứng dụng & luồng điều phối chính
-    ├── mcp_server.cc / .h     # Đăng ký các công cụ MCP cho AI (self.movement.send)
-    ├── movement/              # Phân hệ điều khiển chuyển động của Robot
-    │   ├── pca9685.cc / .h    # Driver giao tiếp I2C với IC PCA9685
-    │   ├── servo_controller.cc# Xử lý dáng đi, đồng bộ góc và lưu trữ NVS
-    │   ├── servo_controller.h # Khai báo class, thông số PWM và các tư thế
-    │   └── movement_commands.h# Định nghĩa tập lệnh di chuyển (enum & string)
-    ├── audio/                 # Trình điều khiển codec âm thanh và I2S
-    ├── boards/                # Cấu hình phần cứng theo từng loại kit dev
-    └── display/               # Xử lý render giao diện, biểu cảm khuôn mặt
+    ├── application.cc / .h    # Core application loop & event orchestrator
+    ├── mcp_server.cc / .h     # Device MCP tool registry (e.g. self.movement.send)
+    ├── movement/              # Robotic locomotion and servo subsystem
+    │   ├── pca9685.cc / .h    # I2C driver for PCA9685 PWM controller
+    │   ├── servo_controller.cc# Gaits, trajectory smoothing, and NVS storage
+    │   ├── servo_controller.h # Class declaration, default angles, and kinematics
+    │   └── movement_commands.h# Movement command enums and string mappings
+    ├── audio/                 # I2S audio drivers, Opus encoder/decoder
+    ├── boards/                # Board support packages (BSP) for various devkits
+    └── display/               # LVGL graphics engine, facial emojis, animations
 ```
 
 ---
 
-## 🚀 Hướng Dẫn Cài Đặt & Biên Dịch (Getting Started)
+## 🚀 Getting Started
 
-### Bước 1: Cài đặt môi trường ESP-IDF
-Dự án tương thích tối ưu với **ESP-IDF v5.3+** (khuyên dùng ESP-IDF v5.5.1).
-Tham khảo hướng dẫn cài đặt chính thức của Espressif: [ESP-IDF Get Started Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/).
+### 1. Prerequisites
+- **ESP-IDF:** v5.3 or higher (tested on **ESP-IDF v5.5.1**).
+  Follow the official [Espressif ESP-IDF Installation Guide](https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/).
+- **Python:** 3.10+ with `pip`.
 
-### Bước 2: Clone mã nguồn
+### 2. Clone the Repository
 ```bash
 git clone https://github.com/nguyenhoangminh25251006/TARS_ESP32_Robot.git
 cd TARS_ESP32_Robot
 ```
 
-### Bước 3: Thiết lập mục tiêu chip và nạp cấu hình
-Chọn chip bạn đang sử dụng (ví dụ ESP32-S3):
+### 3. Set Target & Configure
+Select your target hardware chip (e.g., ESP32-S3):
 ```bash
 idf.py set-target esp32s3
 ```
 
-Tùy chỉnh cấu hình (WiFi, Server backend, chân pin nếu cần):
+Configure Wi-Fi, audio pinout, and backend endpoint if necessary:
 ```bash
 idf.py menuconfig
 ```
 
-### Bước 4: Biên dịch và nạp firmware
-Cắm kit ESP32 vào máy tính qua cổng USB:
+### 4. Build and Flash
+Connect your ESP32 board to your computer via USB:
 ```bash
-# Biên dịch dự án
+# Compile the firmware
 idf.py build
 
-# Nạp firmware và mở Serial Monitor (thay COMx bằng cổng của bạn)
+# Flash and open serial monitor (replace COMx with your serial port, e.g. COM3 or /dev/ttyUSB0)
 idf.py -p COMx flash monitor
 ```
 
 ---
 
-## 📐 Cân Chỉnh Động Cơ Servo (Calibration Guide)
+## 📐 Servo Calibration Guide (`calib_gui.py`)
 
-Để robot TARS đứng thẳng và bước đi chuẩn xác, cần cân chỉnh góc neutral (tọa độ trung tính) cho 4 servo thông qua phần mềm trực quan:
+Precise calibration of neutral positions is critical for stable locomotion. TARS includes an intuitive Python GUI for real-time calibration:
 
-1. Kết nối ESP32 với máy tính qua cổng Serial USB.
-2. Cài đặt thư viện phụ thuộc cho Python (nếu chưa có):
+1. Connect the ESP32 to your PC via USB.
+2. Install the required dependency:
    ```bash
    pip install pyserial
    ```
-3. Chạy phần mềm cân chỉnh:
+3. Launch the calibration application:
    ```bash
    python calib_gui.py
    ```
-4. Chọn đúng cổng COM và tốc độ Baud (thường là `115200`), nhấn **Connect**.
-5. Kéo các thanh trượt để tinh chỉnh từng servo:
-   - **LH (Left Height):** Độ cao thân trái
-   - **RH (Right Height):** Độ cao thân phải
-   - **LL (Left Leg):** Góc xoay chân trái
-   - **RL (Right Leg):** Góc xoay chân phải
-6. Nhấn **Save to NVS** để lưu trực tiếp vào bộ nhớ flash của ESP32. Các giá trị này sẽ tự động nạp mỗi khi robot khởi động lại!
+4. Select your **COM Port** and baud rate (`115200`), then click **Connect**.
+5. Adjust the sliders in real time:
+   - **LH (Left Height):** Left hip/torso vertical alignment.
+   - **RH (Right Height):** Right hip/torso vertical alignment.
+   - **LL (Left Leg):** Left leg neutral center angle.
+   - **RL (Right Leg):** Right leg neutral center angle.
+6. Click **Save to NVS**. The neutral trim parameters are saved directly into the ESP32's non-volatile flash memory and automatically loaded on every system boot.
 
 ---
 
-## 💬 Tương Tác Qua Trí Tuệ Nhân Tạo (AI Interaction)
+## 💬 Voice & AI Commands
 
-Nhờ tích hợp **Model Context Protocol (MCP)**, bạn có thể nói chuyện tự nhiên bằng tiếng Việt hoặc tiếng Anh với robot. AI sẽ tự động phân tích ý định và kích hoạt chuyển động:
+With the **Model Context Protocol (MCP)**, the AI understands natural language intent in multiple languages (English, Vietnamese, Chinese, etc.) and triggers the corresponding physical actions:
 
-- *"TARS ơi, tiến lên phía trước đi!"* ➡️ Gọi tool `self.movement.send(command="MOVE_FORWARD")`
-- *"Lùi lại một chút nào"* ➡️ Gọi tool `self.movement.send(command="MOVE_BACKWARD")`
-- *"Quay sang trái / Quay sang phải"* ➡️ Gọi tool `TURN_LEFT` / `TURN_RIGHT`
-- *"Tạo dáng chụp ảnh xem nào"* ➡️ Gọi tool `POSE`
-- *"Kể chuyện vui gì đi"* ➡️ Robot vừa nói vừa thực hiện động tác nhún nhảy `LAUGH`
-
----
-
-## 🤝 Đóng Góp & Phát Triển (Contribution)
-
-Mọi đóng góp, báo lỗi (Issues) và Pull Requests cải tiến các dáng đi mới cho TARS đều rất được hoan nghênh!
+| Voice Prompt (English) | Vietnamese Equivalent | Triggered MCP Action |
+| :--- | :--- | :--- |
+| *"TARS, walk forward!"* | *"TARS ơi, tiến lên phía trước"* | `self.movement.send(command="MOVE_FORWARD")` |
+| *"Step back a bit"* | *"Lùi lại một chút nào"* | `self.movement.send(command="MOVE_BACKWARD")` |
+| *"Turn left / Turn right"* | *"Rẽ sang trái / Rẽ sang phải"* | `self.movement.send(command="TURN_LEFT" / "TURN_RIGHT")` |
+| *"Strike a pose!"* | *"Tạo dáng chụp ảnh xem nào"* | `self.movement.send(command="POSE")` |
+| *"Tell me a funny joke"* | *"Kể chuyện cười đi"* | Speaks joke while performing celebratory motion (`LAUGH`) |
+| *"Halt / Freeze"* | *"Dừng lại ngay"* | `self.movement.send(command="STOP")` |
 
 ---
 
-## 📜 Giấy Phép (License)
+## 🤝 Contributing
 
-Dự án phát hành dưới giấy phép [MIT License](LICENSE). Trân trọng cảm ơn cộng đồng mã nguồn mở **Xiaozhi ESP32** và **Espressif Systems**.
+Contributions, bug reports, and pull requests to enhance TARS gaits, add inverse kinematics (IK), or expand MCP tools are warmly welcomed!
+
+---
+
+## 📜 License
+
+This project is licensed under the [MIT License](LICENSE). Special thanks to the open-source **XiaoZhi ESP32** community and **Espressif Systems**.
